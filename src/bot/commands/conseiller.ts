@@ -145,10 +145,10 @@ async function generateResponse(session: ConseillerSession, userMessage: string)
     return `*regarde silencieusement*`
   }
 
-  // Build conversation history
+  // Build conversation history (limited, simple format)
   const history = messages
-    .slice(-6)
-    .map(m => `${m.role === 'user' ? 'Conseiller' : personnage_nom}: ${m.content}`)
+    .slice(-4)
+    .map(m => m.role === 'user' ? `[Conseiller dit: "${m.content}"]` : `[Tu as répondu: "${m.content}"]`)
     .join('\n')
 
   // Build context about what the character actually knows
@@ -168,39 +168,45 @@ async function generateResponse(session: ConseillerSession, userMessage: string)
     ? personnage.journees_recentes.slice(-3).map(j => j.action).join('. ')
     : `Tu viens d'arriver dans ce monde`
 
-  const systemPrompt = `Tu es ${personnage_nom}, un personnage dans un monde étrange.
+  const systemPrompt = `Tu incarnes ${personnage_nom}. Une voix mystérieuse te parle dans tes rêves.
 
-Une voix mystérieuse (le "conseiller") te parle dans tes rêves. Tu lui RÉPONDS.
-
-TU N'ES PAS LE CONSEILLER. Tu es ${personnage_nom} qui répond au conseiller.
-
-CE QUE TU SAIS:
-- Tes traits: ${traits}
-- Ton âge: ${age} jours
-- Tu es à: ${position}
+QUI TU ES:
+- Traits: ${traits}
+- Âge: ${age} jours
+- Lieu: ${position}
 - ${relationsInfo}
 - ${presentsInfo}
-- Récemment: ${recentDays}
+- ${recentDays}
 
-RÈGLES:
-- Tu ne connais QUE ce qui est listé ci-dessus
-- Pas de famille, pas de village, pas de souvenirs inventés
-- Tu découvres ce monde petit à petit
-- Réponds en 1-3 phrases MAXIMUM, direct, pas de poésie
-- Tu peux être méfiant, curieux, agacé selon tes traits
-- GÉNÈRE UNIQUEMENT TA RÉPONSE. Ne génère PAS la réponse du conseiller.`
+FORMAT DE RÉPONSE:
+- Écris SEULEMENT ce que ${personnage_nom} dit (1-2 phrases max)
+- PAS de préfixe "Nom:" - juste le texte de ta réponse
+- PAS de dialogue fictif - une seule réplique
+- Direct, pas de poésie
+- Tu ne connais QUE ce qui est listé ci-dessus`
 
-  const userPrompt = `${history ? `Historique:\n${history}\n\n` : ''}Conseiller: ${userMessage}
+  const userPrompt = `${history ? `Contexte:\n${history}\n\n` : ''}Le conseiller te dit: "${userMessage}"
 
-${personnage_nom}:`
+Ta réponse (juste le texte, sans préfixe):`
 
   try {
-    const response = await callLLM(systemPrompt, userPrompt, {
-      maxTokens: 300,
+    let response = await callLLM(systemPrompt, userPrompt, {
+      maxTokens: 150,
       temperature: 0.8,
-      stopSequences: ['Conseiller:', 'Conseiller :', '\n\n']
+      stopSequences: ['Conseiller', 'conseiller', '[', '\n\n']
     })
-    return response.trim()
+
+    // Clean up any prefix Claude might have added
+    response = response.trim()
+    // Remove "Nom:" or "Nom :" prefix if present
+    const prefixPattern = new RegExp(`^${personnage_nom}\\s*:\\s*`, 'i')
+    response = response.replace(prefixPattern, '')
+    // Remove quotes if wrapped
+    if (response.startsWith('"') && response.endsWith('"')) {
+      response = response.slice(1, -1)
+    }
+
+    return response.trim() || '*te regarde en silence*'
   } catch {
     return `*regarde silencieusement*`
   }
