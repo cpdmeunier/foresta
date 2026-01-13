@@ -168,26 +168,11 @@ async function generateResponse(session: ConseillerSession, userMessage: string)
     ? personnage.journees_recentes.slice(-3).map(j => j.action).join('. ')
     : `Tu viens d'arriver dans ce monde`
 
-  const systemPrompt = `Tu incarnes ${personnage_nom}. Une voix mystérieuse te parle dans tes rêves.
+  const systemPrompt = `Tu es ${personnage_nom}. Traits: ${traits}. Tu es à ${position} depuis ${age} jours. ${presentsInfo}. ${relationsInfo}.
 
-QUI TU ES:
-- Traits: ${traits}
-- Âge: ${age} jours
-- Lieu: ${position}
-- ${relationsInfo}
-- ${presentsInfo}
-- ${recentDays}
+Une voix dans tes rêves te parle. Tu réponds en 1-2 phrases. Direct, pas de poésie.`
 
-FORMAT DE RÉPONSE:
-- Écris SEULEMENT ce que ${personnage_nom} dit (1-2 phrases max)
-- PAS de préfixe "Nom:" - juste le texte de ta réponse
-- PAS de dialogue fictif - une seule réplique
-- Direct, pas de poésie
-- Tu ne connais QUE ce qui est listé ci-dessus`
-
-  const userPrompt = `${history ? `Contexte:\n${history}\n\n` : ''}Le conseiller te dit: "${userMessage}"
-
-Ta réponse (juste le texte, sans préfixe):`
+  const userPrompt = userMessage
 
   try {
     let response = await callLLM(systemPrompt, userPrompt, {
