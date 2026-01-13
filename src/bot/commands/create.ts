@@ -5,7 +5,6 @@
 
 import type { Telegraf, Context } from 'telegraf'
 import { createPersonnage, getPersonnageByNom } from '../../db/queries/personnages.js'
-import { getAllTerritoires } from '../../db/queries/territoires.js'
 import { createDestiny } from '../../engine/destiny.js'
 import { TELEGRAM_FORMAT } from '../../types/commands.js'
 
@@ -14,10 +13,9 @@ const SESSION_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
 const wizardSessions = new Map<number, WizardState>()
 
 interface WizardState {
-  step: 'nom' | 'traits' | 'position' | 'confirm'
+  step: 'nom' | 'traits' | 'confirm'
   nom?: string
   traits?: string[]
-  position?: string
   createdAt: number
 }
 
@@ -114,50 +112,24 @@ Ex: curieux, prudent, sociable`)
         return
       }
       session.traits = traits
-      session.step = 'position'
-
-      const territoires = await getAllTerritoires()
-      const lieux = territoires.map(t => `• ${t.nom} - ${t.description}`).join('\n')
-
-      await ctx.reply(`Traits: ${traits.join(', ')}
-
-Où naît ${session.nom}?
-
-${lieux}
-
-Réponds avec le nom du territoire:`)
-      break
-
-    case 'position':
-      const territoiresList = await getAllTerritoires()
-      const validPosition = territoiresList.find(t =>
-        t.nom.toLowerCase() === input.toLowerCase()
-      )
-
-      if (!validPosition) {
-        await ctx.reply(`Territoire inconnu. Choisis parmi: ${territoiresList.map(t => t.nom).join(', ')}`)
-        return
-      }
-
-      session.position = validPosition.nom
       session.step = 'confirm'
 
       await ctx.reply(`**Confirmation:**
 
 Nom: ${session.nom}
-Traits: ${session.traits!.join(', ')}
-Lieu de naissance: ${session.position}
+Traits: ${traits.join(', ')}
+Lieu de naissance: heda (forêt tranquille)
 
 Confirmer? (oui/non)`, { parse_mode: 'Markdown' })
       break
 
     case 'confirm':
       if (input.toLowerCase() === 'oui' || input.toLowerCase() === 'yes' || input.toLowerCase() === 'o') {
-        // Create personnage
+        // Create personnage - always at heda (safe starting zone)
         const personnage = await createPersonnage({
           nom: session.nom!,
           traits: session.traits!,
-          position: session.position
+          position: 'heda'
         })
 
         // Create destiny
