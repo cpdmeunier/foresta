@@ -4,10 +4,11 @@
  */
 
 import type { Telegraf } from 'telegraf'
-import { getPersonnageByNom, setInConversation } from '../../db/queries/personnages.js'
+import { getPersonnageByNom, getPersonnageById, setInConversation, getPersonnagesAtPosition } from '../../db/queries/personnages.js'
 import { callLLM } from '../../llm/client.js'
 import { TELEGRAM_FORMAT } from '../../types/commands.js'
 import type { ConseillerSession } from '../../types/commands.js'
+import type { Personnage } from '../../types/entities.js'
 
 // Active sessions with timeout
 const SESSION_TIMEOUT_MS = 15 * 60 * 1000 // 15 minutes
@@ -130,18 +131,58 @@ Tapez /fin pour terminer la conversation.`, { parse_mode: 'Markdown' })
 }
 
 async function generateResponse(session: ConseillerSession, userMessage: string): Promise<string> {
-  const { personnage_nom, messages } = session
+  const { personnage_id, personnage_nom, messages } = session
+
+  // Fetch current personnage data for context
+  let personnage: Personnage
+  let otherPresents: Personnage[] = []
+  try {
+    personnage = await getPersonnageById(personnage_id)
+    const allPresents = await getPersonnagesAtPosition(personnage.position)
+    otherPresents = allPresents.filter(p => p.id !== personnage_id && p.vivant)
+  } catch {
+    // Fallback if fetch fails
+    return `*regarde silencieusement*`
+  }
 
   // Build conversation history
   const history = messages
-    .slice(-6) // Last 6 messages for context
+    .slice(-6)
     .map(m => `${m.role === 'user' ? 'Conseiller' : personnage_nom}: ${m.content}`)
     .join('\n')
 
+  // Build context about what the character actually knows
+  const traits = personnage.traits.join(', ')
+  const age = personnage.age
+  const position = personnage.position
+
+  const relationsInfo = personnage.relations.length > 0
+    ? `Tu connais: ${personnage.relations.map(r => r.personnage_nom).join(', ')}`
+    : `Tu n'as rencontré personne pour l'instant`
+
+  const presentsInfo = otherPresents.length > 0
+    ? `Avec toi: ${otherPresents.map(p => p.nom).join(', ')}`
+    : `Tu es seul(e)`
+
+  const recentDays = personnage.journees_recentes.length > 0
+    ? personnage.journees_recentes.slice(-3).map(j => j.action).join('. ')
+    : `Tu viens d'arriver dans ce monde`
+
   const systemPrompt = `Tu es ${personnage_nom}. Tu parles à ton conseiller (une voix dans tes rêves).
-Tu ne sais pas grand-chose du monde - juste ce que tu as vécu.
-Réponds naturellement, 1-3 phrases. Direct, pas de poésie.
-Tu peux avoir des doutes, des questions, des émotions.`
+
+CE QUE TU SAIS:
+- Traits: ${traits}
+- Âge: ${age} jours
+- Tu es à: ${position}
+- ${relationsInfo}
+- ${presentsInfo}
+- Récemment: ${recentDays}
+
+IMPORTANT:
+- Tu ne connais QUE ce qui est listé ci-dessus
+- Pas de famille, pas de village, pas de souvenirs inventés
+- Tu découvres ce monde petit à petit
+- Réponds en 1-3 phrases, direct, pas de poésie`
 
   const userPrompt = `${history ? `Historique:\n${history}\n\n` : ''}Conseiller: ${userMessage}
 

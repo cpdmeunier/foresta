@@ -16,17 +16,21 @@ export interface ResumeDayContext {
 }
 
 export function buildResumeSystemPrompt(): string {
-  return `Tu es le chroniqueur de Foresta. Tu rédiges le résumé quotidien du monde.
+  return `Tu rédiges un résumé du jour. Style: journal intime, brut, direct.
 
-Le résumé doit:
-- Être poétique mais concis (3-5 phrases)
-- Capturer l'essence des événements du jour
-- Mentionner les personnages qui ont agi
-- Évoquer l'atmosphère générale
+INTERDIT:
+- Poésie, métaphores fleuries
+- Mots pompeux (écarlate, ancestral, murmure, voile)
+- Ton poli et générique
+
+OBLIGATOIRE:
+- Direct et concret
+- 1 phrase par personnage qui a agi
+- Humour/sarcasme autorisé si pertinent
 
 RÉPONSE EN JSON UNIQUEMENT:
 {
-  "resume": "Le résumé du jour en 3-5 phrases"
+  "resume": "Résumé brut du jour"
 }`
 }
 
