@@ -191,25 +191,53 @@ Ta réponse (juste le texte, sans préfixe):`
 
   try {
     let response = await callLLM(systemPrompt, userPrompt, {
-      maxTokens: 150,
-      temperature: 0.8,
-      stopSequences: ['Conseiller', 'conseiller', '[', '\n\n']
+      maxTokens: 100,
+      temperature: 0.7
     })
 
-    // Clean up any prefix Claude might have added
-    response = response.trim()
-    // Remove "Nom:" or "Nom :" prefix if present
-    const prefixPattern = new RegExp(`^${personnage_nom}\\s*:\\s*`, 'i')
-    response = response.replace(prefixPattern, '')
-    // Remove quotes if wrapped
-    if (response.startsWith('"') && response.endsWith('"')) {
-      response = response.slice(1, -1)
-    }
+    // Aggressive cleanup
+    response = cleanupResponse(response, personnage_nom)
 
-    return response.trim() || '*te regarde en silence*'
+    return response || '*te regarde en silence*'
   } catch {
     return `*regarde silencieusement*`
   }
+}
+
+function cleanupResponse(response: string, personnage_nom: string): string {
+  let text = response.trim()
+
+  // Cut at any sign of the advisor speaking
+  const cutPatterns = [
+    /\n\s*Conseiller\s*:/i,
+    /\n\s*\[Conseiller/i,
+    /\n\s*Le conseiller/i,
+    new RegExp(`\\n\\s*${personnage_nom}\\s*:`, 'i'), // Character speaking again = dialogue
+  ]
+
+  for (const pattern of cutPatterns) {
+    const match = text.match(pattern)
+    if (match && match.index !== undefined) {
+      text = text.substring(0, match.index)
+    }
+  }
+
+  // Remove character name prefix
+  const prefixPattern = new RegExp(`^${personnage_nom}\\s*:\\s*`, 'i')
+  text = text.replace(prefixPattern, '')
+
+  // Remove quotes if wrapped
+  if (text.startsWith('"') && text.endsWith('"')) {
+    text = text.slice(1, -1)
+  }
+
+  // Take only first 2 sentences max
+  const sentences = text.split(/(?<=[.!?])\s+/)
+  if (sentences.length > 2) {
+    text = sentences.slice(0, 2).join(' ')
+  }
+
+  return text.trim()
 }
 
 async function endConversation(chatId: number): Promise<void> {
