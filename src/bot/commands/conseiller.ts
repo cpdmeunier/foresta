@@ -170,12 +170,18 @@ async function generateResponse(session: ConseillerSession, userMessage: string)
 
   // Last exchange only (if any)
   const lastExchange = messages.length >= 2
-    ? `(Avant: on t'a demandé "${messages[messages.length - 2]?.content}" et tu as dit "${messages[messages.length - 1]?.content}")`
+    ? `Juste avant, on t'a dit "${messages[messages.length - 2]?.content}" et tu as répondu "${messages[messages.length - 1]?.content}".`
     : ''
 
-  const systemPrompt = `Tu es ${personnage_nom}, ${traits}. ${position}, ${age} jours. ${presentsInfo}. ${lastExchange}
+  const systemPrompt = `Jeu de rôle. Tu joues ${personnage_nom}.
 
-Réponds en 1 phrase selon tes traits. Direct.`
+Contexte: Tu es à ${position}. ${presentsInfo}. ${lastExchange}
+
+Règles:
+- Réponds comme ${personnage_nom} parlerait (${traits})
+- 1 phrase max
+- Ne dis JAMAIS "en tant que" ou "je suis [trait]"
+- Ne récite pas tes traits, incarne-les`
 
   const userPrompt = userMessage
 
