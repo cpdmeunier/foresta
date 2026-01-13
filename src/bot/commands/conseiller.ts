@@ -187,8 +187,9 @@ Règles:
 
   try {
     let response = await callLLM(systemPrompt, userPrompt, {
-      maxTokens: 100,
-      temperature: 0.7
+      maxTokens: 150,
+      temperature: 0.8,
+      model: 'sonnet'
     })
 
     // Aggressive cleanup

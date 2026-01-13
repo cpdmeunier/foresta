@@ -42,6 +42,7 @@ export interface LLMOptions {
   temperature?: number
   maxTokens?: number
   stopSequences?: string[]
+  model?: 'haiku' | 'sonnet'
 }
 
 const DEFAULT_OPTIONS: Required<LLMOptions> = {
@@ -49,8 +50,14 @@ const DEFAULT_OPTIONS: Required<LLMOptions> = {
   timeoutMs: 10000,
   temperature: 0.7,
   maxTokens: 1024,
-  stopSequences: []
+  stopSequences: [],
+  model: 'haiku'
 }
+
+const MODELS = {
+  haiku: 'claude-3-haiku-20240307',
+  sonnet: 'claude-sonnet-4-20250514'
+} as const
 
 // ============================================
 // MAIN CALL FUNCTION
@@ -69,7 +76,7 @@ export async function callLLM(
     try {
       const response = await Promise.race([
         anthropic.messages.create({
-          model: 'claude-3-haiku-20240307',
+          model: MODELS[opts.model],
           max_tokens: opts.maxTokens,
           temperature: opts.temperature,
           system: systemPrompt,
