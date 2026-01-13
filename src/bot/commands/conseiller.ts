@@ -186,8 +186,9 @@ RÈGLES:
 - Tu ne connais QUE ce qui est listé ci-dessus
 - Pas de famille, pas de village, pas de souvenirs inventés
 - Tu découvres ce monde petit à petit
-- Réponds en 1-3 phrases, direct, pas de poésie
-- Tu peux être méfiant, curieux, agacé selon tes traits`
+- Réponds en 1-3 phrases MAXIMUM, direct, pas de poésie
+- Tu peux être méfiant, curieux, agacé selon tes traits
+- GÉNÈRE UNIQUEMENT TA RÉPONSE. Ne génère PAS la réponse du conseiller.`
 
   const userPrompt = `${history ? `Historique:\n${history}\n\n` : ''}Conseiller: ${userMessage}
 
@@ -196,7 +197,8 @@ ${personnage_nom}:`
   try {
     const response = await callLLM(systemPrompt, userPrompt, {
       maxTokens: 300,
-      temperature: 0.8
+      temperature: 0.8,
+      stopSequences: ['Conseiller:', 'Conseiller :', '\n\n']
     })
     return response.trim()
   } catch {

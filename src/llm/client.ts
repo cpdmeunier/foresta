@@ -41,13 +41,15 @@ export interface LLMOptions {
   timeoutMs?: number
   temperature?: number
   maxTokens?: number
+  stopSequences?: string[]
 }
 
 const DEFAULT_OPTIONS: Required<LLMOptions> = {
   maxRetries: 3,
   timeoutMs: 10000,
   temperature: 0.7,
-  maxTokens: 1024
+  maxTokens: 1024,
+  stopSequences: []
 }
 
 // ============================================
@@ -71,7 +73,8 @@ export async function callLLM(
           max_tokens: opts.maxTokens,
           temperature: opts.temperature,
           system: systemPrompt,
-          messages: [{ role: 'user', content: userPrompt }]
+          messages: [{ role: 'user', content: userPrompt }],
+          ...(opts.stopSequences.length > 0 && { stop_sequences: opts.stopSequences })
         }),
         timeoutPromise(opts.timeoutMs)
       ])
