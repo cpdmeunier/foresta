@@ -15,43 +15,29 @@ export interface PersonnageContext {
 }
 
 export function buildPersonnageSystemPrompt(): string {
-  return `Tu es le narrateur de Foresta, une petite planète habitée par des animaux.
+  return `Tu décides ce qu'un personnage fait aujourd'hui, basé UNIQUEMENT sur ce qu'il sait.
 
-GÉOGRAPHIE (pour toi, le narrateur):
-- HEDA: Forêt tranquille et sûre. Point de départ.
-- VEDA: Vallée aux cratères toxiques. Rend fou.
-- LUNA: Montagnes avec monstres. Danger mortel.
-- ROGA: Désert aride. Survie difficile.
-- MUNA: Terres glacées. Froid mortel.
+Le personnage vit dans un monde qu'il découvre petit à petit. Il ne connaît QUE:
+- L'endroit où il se trouve actuellement
+- Les endroits qu'il a déjà visités
+- Ce qu'il voit autour de lui
 
-IMPORTANT - CONNAISSANCE DES PERSONNAGES:
-- Un personnage NE CONNAÎT QUE les territoires qu'il a visités
-- Au départ, il ne connaît AUCUN nom de lieu - il découvre tout
-- Il appelle les lieux par ce qu'il voit ("la forêt", "ces montagnes")
-- Il apprend les noms et dangers en explorant ou en parlant aux autres
-- S'il n'a jamais quitté Heda, il ne sait même pas que d'autres territoires existent
-
-Chaque personnage a:
-- Des traits de caractère qui influencent ses décisions
-- Un destin écrit avec des paliers à atteindre
-- Une liste de territoires connus (knownRegions)
-- Une mémoire des derniers jours
+Tu ne reçois QUE les informations que le personnage possède. Pas plus.
 
 RÈGLES:
-1. L'action doit être cohérente avec les traits du personnage
-2. Le lieu de fin doit être accessible (lieu actuel ou connexion)
-3. Le personnage ne peut PAS mentionner un lieu qu'il n'a pas visité
-4. Les événements locaux influencent les décisions
-5. Le destin guide subtilement mais n'impose pas
+1. L'action doit être cohérente avec ses traits de caractère
+2. Il peut rester sur place ou aller vers un lieu visible (connexion)
+3. S'il y a d'autres personnages, il peut interagir avec eux
+4. Les événements locaux influencent ses décisions
 
 STYLE: Direct, concret, pas de poésie. Humour/sarcasme autorisé.
 
 RÉPONSE EN JSON UNIQUEMENT:
 {
   "action": "description courte de l'action",
-  "lieu_fin": "nom du territoire où le personnage finit",
+  "lieu_fin": "nom du lieu où il termine (actuel ou connexion)",
   "cible": "nom du personnage ciblé ou null",
-  "narration": "2-3 phrases narratives décrivant l'action"
+  "narration": "2-3 phrases décrivant ce qu'il fait"
 }`
 }
 
@@ -59,45 +45,48 @@ export function buildPersonnageUserPrompt(ctx: PersonnageContext): string {
   const { personnage, lieu, personnages_presents, lieux_accessibles, evenements_locaux, jour } = ctx
 
   const traits = personnage.traits.join(', ')
-  const presentsNames = personnages_presents.map(p => p.nom).join(', ') || 'personne'
-  const accessibles = lieux_accessibles.join(', ')
-  const evenementsDesc = evenements_locaux.map(e => `- ${e.type}: ${e.description}`).join('\n') || 'aucun'
 
-  // Calculate known regions from journees_recentes + current position
-  const visitedLieux = new Set<string>([personnage.position])
-  for (const j of personnage.journees_recentes) {
-    visitedLieux.add(j.lieu)
-  }
-  const lieuxConnus = Array.from(visitedLieux).join(', ')
+  // Autres personnages présents - seulement leurs noms et traits visibles
+  const presentsInfo = personnages_presents.length > 0
+    ? personnages_presents.map(p => `- ${p.nom} (${p.traits.slice(0, 2).join(', ')})`).join('\n')
+    : 'Personne d\'autre'
 
-  const destinyHint = personnage.destin
-    ? `Destin (pour le narrateur): "${personnage.destin.fin_ecrite}". Inclination: "${personnage.destin.inclination_actuelle}"`
-    : 'Pas encore de destin'
+  // Connexions visibles - le personnage voit des chemins mais ne connaît pas forcément les noms
+  // On donne juste les directions possibles
+  const connexionsVisibles = lieux_accessibles
+    .filter(l => l !== personnage.position)
+    .map(l => `- Un chemin mène vers ${l}`)
+    .join('\n') || 'Aucun chemin visible'
+
+  const evenementsDesc = evenements_locaux.length > 0
+    ? evenements_locaux.map(e => `- ${e.description}`).join('\n')
+    : 'Rien de particulier'
 
   const recentActions = personnage.journees_recentes
     .slice(-3)
-    .map(j => `Jour ${j.jour}: ${j.action} à ${j.lieu}`)
-    .join('\n') || 'Aucune action récente'
+    .map(j => `Jour ${j.jour}: ${j.action}`)
+    .join('\n') || 'Premier jour'
 
-  return `JOUR ${jour} - PERSONNAGE: ${personnage.nom}
+  return `JOUR ${jour}
 
+PERSONNAGE: ${personnage.nom}
 TRAITS: ${traits}
 ÂGE: ${personnage.age} jours
-POSITION ACTUELLE: ${lieu.nom} - ${lieu.description}
 
-TERRITOIRES CONNUS PAR LE PERSONNAGE: ${lieuxConnus}
-(Il ne connaît PAS les autres territoires - il ne sait même pas qu'ils existent)
+OÙ IL EST: ${lieu.nom}
+${lieu.description}
 
-PRÉSENTS: ${presentsNames}
-LIEUX ACCESSIBLES (pour le narrateur): ${accessibles}
+QUI IL VOIT:
+${presentsInfo}
 
-ÉVÉNEMENTS LOCAUX:
+CHEMINS POSSIBLES:
+${connexionsVisibles}
+
+CE QUI SE PASSE ICI:
 ${evenementsDesc}
 
-${destinyHint}
-
-ACTIONS RÉCENTES:
+SES DERNIERS JOURS:
 ${recentActions}
 
-Quelle action ${personnage.nom} fait-il aujourd'hui?`
+Que fait ${personnage.nom} aujourd'hui?`
 }

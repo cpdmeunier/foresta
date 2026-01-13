@@ -135,21 +135,21 @@ async function generateResponse(session: ConseillerSession, userMessage: string)
   // Build conversation history
   const history = messages
     .slice(-6) // Last 6 messages for context
-    .map(m => `${m.role === 'user' ? 'Démiurge' : personnage_nom}: ${m.content}`)
+    .map(m => `${m.role === 'user' ? 'Conseiller' : personnage_nom}: ${m.content}`)
     .join('\n')
 
-  const systemPrompt = `Tu es ${personnage_nom}, un habitant de Foresta.
-Tu réponds au Démiurge (le créateur du monde) qui te parle.
-Reste en personnage, réponds de manière concise (1-3 phrases).
-Tu peux exprimer tes pensées, tes doutes, tes espoirs.`
+  const systemPrompt = `Tu es ${personnage_nom}. Tu parles à ton conseiller (une voix dans tes rêves).
+Tu ne sais pas grand-chose du monde - juste ce que tu as vécu.
+Réponds naturellement, 1-3 phrases. Direct, pas de poésie.
+Tu peux avoir des doutes, des questions, des émotions.`
 
-  const userPrompt = `${history ? `Conversation précédente:\n${history}\n\n` : ''}Démiurge: ${userMessage}
+  const userPrompt = `${history ? `Historique:\n${history}\n\n` : ''}Conseiller: ${userMessage}
 
 ${personnage_nom}:`
 
   try {
     const response = await callLLM(systemPrompt, userPrompt, {
-      maxTokens: 150,
+      maxTokens: 300,
       temperature: 0.8
     })
     return response.trim()

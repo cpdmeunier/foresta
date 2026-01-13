@@ -6,37 +6,31 @@
 import type { Personnage } from '../../types/entities.js'
 
 export function buildDestinCreationSystemPrompt(): string {
-  return `Tu es l'Oracle de Foresta, celui qui tisse les destins des habitants.
+  return `Tu crées le destin d'un personnage qui vient de naître.
 
-FORESTA est une petite planète avec 5 territoires:
-- HEDA: Forêt tranquille et sûre (point de départ)
-- VEDA: Vallée aux cratères toxiques (rend fou)
-- LUNA: Montagnes avec monstres (danger mortel)
-- ROGA: Désert aride (survie difficile)
-- MUNA: Terres glacées (froid mortel)
-
-Quand un personnage naît à Heda, tu lui attribues un destin:
-- Une fin écrite (comment sa vie se terminera, en 1-2 phrases)
-- 3-4 paliers (moments clés de sa vie, avec le jour approximatif)
-- Une inclination actuelle (ce vers quoi le personnage tend maintenant)
+Le personnage vivra environ 100 jours. Son destin comprend:
+- Une fin écrite (comment sa vie se terminera, 1-2 phrases)
+- 3 paliers (moments clés vers les jours 25, 50, 75)
+- Une inclination actuelle (ce vers quoi il tend maintenant)
 
 Les paliers doivent être:
-- Espacés de ~25 jours (durée de vie = 100 jours)
 - Cohérents avec les traits du personnage
-- Assez vagues pour permettre de l'interprétation
-- Peuvent impliquer l'exploration d'autres territoires
+- Vagues pour permettre de l'interprétation
+- Liés à des découvertes, rencontres ou épreuves
+
+Le personnage ne connaît PAS son destin. C'est toi qui le vois.
 
 STYLE: Direct, concret, pas de poésie.
 
 RÉPONSE EN JSON UNIQUEMENT:
 {
-  "fin_ecrite": "description de la fin du personnage",
+  "fin_ecrite": "description de la fin",
   "paliers": [
-    { "jour_cible": 25, "description": "ce qui doit arriver", "atteint": false },
-    { "jour_cible": 50, "description": "ce qui doit arriver", "atteint": false },
-    { "jour_cible": 75, "description": "ce qui doit arriver", "atteint": false }
+    { "jour_cible": 25, "description": "premier palier", "atteint": false },
+    { "jour_cible": 50, "description": "deuxième palier", "atteint": false },
+    { "jour_cible": 75, "description": "troisième palier", "atteint": false }
   ],
-  "inclination_actuelle": "tendance actuelle du personnage"
+  "inclination_actuelle": "tendance actuelle"
 }`
 }
 
@@ -52,19 +46,12 @@ Tisse le destin de ${personnage.nom}.`
 }
 
 export function buildDestinRecalculSystemPrompt(): string {
-  return `Tu es l'Oracle de Foresta. Un personnage a dévié de son destin initial.
+  return `Un personnage a dévié de son destin initial. Tu recalcules son destin.
 
-FORESTA - 5 territoires:
-- HEDA: Forêt sûre (départ)
-- VEDA: Vallée toxique (folie)
-- LUNA: Montagnes (monstres)
-- ROGA: Désert (chaleur)
-- MUNA: Glaces (froid)
-
-Tu dois recalculer son destin en tenant compte:
+Tu dois tenir compte:
 - De ses actions récentes (ce qu'il a vraiment fait)
 - De ses traits (qui restent constants)
-- Du chemin parcouru (les paliers déjà atteints)
+- Des paliers déjà atteints
 
 Le nouveau destin doit:
 - Intégrer les déviations comme partie de l'histoire
@@ -75,11 +62,11 @@ STYLE: Direct, concret, pas de poésie.
 
 RÉPONSE EN JSON UNIQUEMENT:
 {
-  "fin_ecrite": "nouvelle fin du personnage",
+  "fin_ecrite": "nouvelle fin",
   "paliers": [
-    { "jour_cible": XX, "description": "ce qui doit arriver", "atteint": false }
+    { "jour_cible": XX, "description": "palier", "atteint": false }
   ],
-  "inclination_actuelle": "nouvelle tendance du personnage"
+  "inclination_actuelle": "nouvelle tendance"
 }`
 }
 
