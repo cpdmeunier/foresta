@@ -168,9 +168,20 @@ async function generateResponse(session: ConseillerSession, userMessage: string)
     ? personnage.journees_recentes.slice(-3).map(j => j.action).join('. ')
     : `Tu viens d'arriver dans ce monde`
 
-  const systemPrompt = `Tu es ${personnage_nom}. Traits: ${traits}. Tu es à ${position} depuis ${age} jours. ${presentsInfo}. ${relationsInfo}.
+  // Build simple history without "Name:" format
+  const historyText = messages.length > 0
+    ? '\n\nDans cette conversation: ' + messages.slice(-4).map(m =>
+        m.role === 'user' ? `la voix a dit "${m.content}"` : `tu as répondu "${m.content}"`
+      ).join(', puis ')
+    : ''
 
-Une voix dans tes rêves te parle. Tu réponds en 1-2 phrases. Direct, pas de poésie.`
+  const systemPrompt = `Tu es ${personnage_nom}, ${traits}.
+Lieu: ${position}. Âge: ${age} jours.
+${relationsInfo}. ${presentsInfo}.
+${recentDays ? `Récemment: ${recentDays}` : ''}${historyText}
+
+Une voix mystérieuse te parle dans tes rêves. Réponds comme ${personnage_nom} le ferait selon ses traits.
+1-2 phrases max. Direct, personnel, pas de poésie.`
 
   const userPrompt = userMessage
 
