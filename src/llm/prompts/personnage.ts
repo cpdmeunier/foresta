@@ -17,27 +17,30 @@ export interface PersonnageContext {
 export function buildPersonnageSystemPrompt(): string {
   return `Tu es le narrateur de Foresta, une petite planète habitée par des animaux.
 
-GÉOGRAPHIE DE FORESTA:
-- HEDA: Forêt tranquille et sûre. Point de départ de tous.
-- VEDA: Vallée aux cratères. Des gaz toxiques s'en échappent. Rester trop longtemps rend fou.
-- LUNA: Montagnes et grottes. Monstres sauvages. Danger de mort.
-- ROGA: Désert chaud et aride. Survie difficile.
-- MUNA: Terres glacées. Neige et froid mortel.
+GÉOGRAPHIE (pour toi, le narrateur):
+- HEDA: Forêt tranquille et sûre. Point de départ.
+- VEDA: Vallée aux cratères toxiques. Rend fou.
+- LUNA: Montagnes avec monstres. Danger mortel.
+- ROGA: Désert aride. Survie difficile.
+- MUNA: Terres glacées. Froid mortel.
 
-Les personnages naissent à Heda et découvrent les autres territoires en explorant.
+IMPORTANT - CONNAISSANCE DES PERSONNAGES:
+- Un personnage NE CONNAÎT QUE les territoires qu'il a visités
+- Au départ, il ne connaît AUCUN nom de lieu - il découvre tout
+- Il appelle les lieux par ce qu'il voit ("la forêt", "ces montagnes")
+- Il apprend les noms et dangers en explorant ou en parlant aux autres
+- S'il n'a jamais quitté Heda, il ne sait même pas que d'autres territoires existent
 
 Chaque personnage a:
 - Des traits de caractère qui influencent ses décisions
 - Un destin écrit avec des paliers à atteindre
-- Des relations avec d'autres personnages
+- Une liste de territoires connus (knownRegions)
 - Une mémoire des derniers jours
-
-Tu dois décider de l'action du jour pour un personnage donné.
 
 RÈGLES:
 1. L'action doit être cohérente avec les traits du personnage
 2. Le lieu de fin doit être accessible (lieu actuel ou connexion)
-3. Si des personnages sont présents, les interactions sont possibles
+3. Le personnage ne peut PAS mentionner un lieu qu'il n'a pas visité
 4. Les événements locaux influencent les décisions
 5. Le destin guide subtilement mais n'impose pas
 
@@ -60,8 +63,15 @@ export function buildPersonnageUserPrompt(ctx: PersonnageContext): string {
   const accessibles = lieux_accessibles.join(', ')
   const evenementsDesc = evenements_locaux.map(e => `- ${e.type}: ${e.description}`).join('\n') || 'aucun'
 
+  // Calculate known regions from journees_recentes + current position
+  const visitedLieux = new Set<string>([personnage.position])
+  for (const j of personnage.journees_recentes) {
+    visitedLieux.add(j.lieu)
+  }
+  const lieuxConnus = Array.from(visitedLieux).join(', ')
+
   const destinyHint = personnage.destin
-    ? `Destin: "${personnage.destin.fin_ecrite}". Inclination actuelle: "${personnage.destin.inclination_actuelle}"`
+    ? `Destin (pour le narrateur): "${personnage.destin.fin_ecrite}". Inclination: "${personnage.destin.inclination_actuelle}"`
     : 'Pas encore de destin'
 
   const recentActions = personnage.journees_recentes
@@ -75,8 +85,11 @@ TRAITS: ${traits}
 ÂGE: ${personnage.age} jours
 POSITION ACTUELLE: ${lieu.nom} - ${lieu.description}
 
+TERRITOIRES CONNUS PAR LE PERSONNAGE: ${lieuxConnus}
+(Il ne connaît PAS les autres territoires - il ne sait même pas qu'ils existent)
+
 PRÉSENTS: ${presentsNames}
-LIEUX ACCESSIBLES: ${accessibles}
+LIEUX ACCESSIBLES (pour le narrateur): ${accessibles}
 
 ÉVÉNEMENTS LOCAUX:
 ${evenementsDesc}
