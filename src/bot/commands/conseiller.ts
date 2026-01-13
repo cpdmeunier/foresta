@@ -168,10 +168,22 @@ async function generateResponse(session: ConseillerSession, userMessage: string)
     ? personnage.journees_recentes.slice(-3).map(j => j.action).join('. ')
     : `Tu viens d'arriver dans ce monde`
 
-  // Last exchange only (if any)
-  const lastExchange = messages.length >= 2
-    ? `Juste avant, on t'a dit "${messages[messages.length - 2]?.content}" et tu as répondu "${messages[messages.length - 1]?.content}".`
-    : ''
+  // Conversation memory (last 3 exchanges = 6 messages)
+  const recentMessages = messages.slice(-6)
+  let conversationMemory = ''
+  if (recentMessages.length > 0) {
+    const exchanges = []
+    for (let i = 0; i < recentMessages.length; i += 2) {
+      const userMsg = recentMessages[i]
+      const charMsg = recentMessages[i + 1]
+      if (userMsg && charMsg) {
+        exchanges.push(`"${userMsg.content}" → tu as dit "${charMsg.content}"`)
+      }
+    }
+    if (exchanges.length > 0) {
+      conversationMemory = `Dans cette conversation: ${exchanges.join(' | ')}`
+    }
+  }
 
   const systemPrompt = `Jeu de rôle. Tu joues ${personnage_nom}.
 
@@ -182,7 +194,7 @@ CE QUE TU SAIS:
 - ${relationsInfo}
 - ${presentsInfo}
 - Récemment: ${recentDays}
-${lastExchange ? `- ${lastExchange}` : ''}
+${conversationMemory ? `- ${conversationMemory}` : ''}
 
 Une voix mystérieuse te parle dans tes rêves.
 
