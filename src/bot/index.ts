@@ -100,18 +100,26 @@ export async function startBot(): Promise<void> {
 
   // Cleanup stale conversations from previous runs
   try {
+    console.log('  → Cleaning up stale conversations...')
     const cleaned = await cleanupStaleConversations(0) // Clear all in_conversation flags
-    if (cleaned > 0) {
-      console.log(`🧹 Cleaned up ${cleaned} stale conversation(s) from previous run`)
-    }
+    console.log(`  → Cleanup done (${cleaned} cleared)`)
   } catch (error) {
     console.warn('Failed to cleanup stale conversations:', error)
   }
 
   // Launch bot
-  await bot.launch()
+  console.log('  → Launching Telegram bot...')
 
-  console.log('🌲 Foresta V2 bot is running!')
+  // Launch returns a promise that resolves when bot starts
+  // The bot will keep running via polling in the background
+  bot.launch({ dropPendingUpdates: true })
+    .then(() => {
+      console.log('🌲 Foresta V2 bot is running!')
+    })
+    .catch((err) => {
+      console.error('❌ Failed to start bot:', err)
+      process.exit(1)
+    })
 }
 
 export async function stopBot(): Promise<void> {

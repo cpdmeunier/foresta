@@ -7,7 +7,8 @@ import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { runCycle } from '../../engine/orchestrator.js'
 
 const TRIGGER_SECRET = process.env.TRIGGER_SECRET || 'foresta-trigger'
-const PORT = parseInt(process.env.TRIGGER_PORT || '3001', 10)
+// Use Railway's PORT env var, fallback to TRIGGER_PORT or 3001
+const PORT = parseInt(process.env.PORT || process.env.TRIGGER_PORT || '3001', 10)
 
 let server: ReturnType<typeof createServer> | null = null
 
