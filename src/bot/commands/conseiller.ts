@@ -168,22 +168,22 @@ async function generateResponse(session: ConseillerSession, userMessage: string)
     ? personnage.journees_recentes.slice(-3).map(j => j.action).join('. ')
     : `Tu viens d'arriver dans ce monde`
 
-  // Build simple history without "Name:" format
-  const historyText = messages.length > 0
-    ? '\n\nDans cette conversation: ' + messages.slice(-4).map(m =>
-        m.role === 'user' ? `la voix a dit "${m.content}"` : `tu as répondu "${m.content}"`
-      ).join(', puis ')
-    : ''
-
   const systemPrompt = `Tu es ${personnage_nom}, ${traits}.
 Lieu: ${position}. Âge: ${age} jours.
 ${relationsInfo}. ${presentsInfo}.
-${recentDays ? `Récemment: ${recentDays}` : ''}${historyText}
+${recentDays ? `Récemment: ${recentDays}` : ''}
 
-Une voix mystérieuse te parle dans tes rêves. Réponds comme ${personnage_nom} le ferait selon ses traits.
-1-2 phrases max. Direct, personnel, pas de poésie.`
+Une voix mystérieuse te parle dans tes rêves. Réponds selon tes traits.
+1-2 phrases max. Direct, pas de poésie.`
 
-  const userPrompt = userMessage
+  // Build user prompt with history included
+  let userPrompt = userMessage
+  if (messages.length > 0) {
+    const recentHistory = messages.slice(-4).map(m =>
+      m.role === 'user' ? `Voix: "${m.content}"` : `Toi: "${m.content}"`
+    ).join('\n')
+    userPrompt = `[Ce qui a été dit avant]\n${recentHistory}\n\n[Maintenant la voix dit]\n${userMessage}`
+  }
 
   try {
     let response = await callLLM(systemPrompt, userPrompt, {
